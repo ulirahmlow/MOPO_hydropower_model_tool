@@ -1,10 +1,18 @@
-# **MOPO_hydro_inflow**
+# **MOPO_hydro_tool**
 
 ## **Overview**
 
 This tool processes geographical data and uses aggregated surface runoff and sub-surface runoff climate data to predict the hydropower according to Entso-e and eSett electricity data.
 
+Equivalent model overview: to be added...
+
 ## **Requirements**
+
+To be added...
+
+## **Inflow Calculation**
+
+### **Input Data**
 
 **Geo Data**:
 Download below database:
@@ -20,7 +28,7 @@ Download below database:
 
 • DTU CorRES webservice subscription by contacting [CorRES](https://corres.windenergy.dtu.dk/using-corres)
 
-## **Setup**
+### **Setup**
 
 1. **Update Configuration**:
    - Setup the correct folder path and API token in `.env.json` to include your downloaded geo data.
@@ -30,15 +38,15 @@ Download below database:
    - Run `01_main_generate_corres_points.py` to get the geographical points for fetching weather data from CorRES.
 
 3. **Download Data**:
-   - Download the surface runoff and subsurface runoff data from CorRES using the generated Excel file.
+   - Download the surface runoff and subsurface runoff data from CorRES from 1991 to 2021 using the generated Excel file.
 
 4. **Run Main Script**:
    - Execute `02_main_data.py` to get the predicted inflow or run-of-river generation data.
 
-## **Solution**
+### **Solution**
 
 Predicted inflow stored in `solutions/method/predicted_inflow`.
 
-## **Method**
+### **Method**
 
 To be improved and updated…
