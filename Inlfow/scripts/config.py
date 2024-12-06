@@ -1,12 +1,11 @@
 import json
 import os
-from dotenv import load_dotenv
 
 def get_config(config_name):
     with open(os.path.join(os.path.dirname(__file__), config_name), 'r') as f:
         return json.load(f)
     
-load_dotenv()
+
 config = get_config('_config.json')
 country_code = config['bidding_zone']
 aviability_zone = config['available_hdam_zone']+config['available_hror_zone']
