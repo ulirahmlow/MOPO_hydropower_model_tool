@@ -6,9 +6,6 @@ This tool processes geographical data and uses aggregated surface runoff and sub
 
 ## **Requirements**
 
-**Python Library**:
-- `pip install pandas geopandas shapely matplotlib numpy statsmodels scikit-learn requests entsoe-py`
-
 **Geo Data**:
 Download below database:
 
