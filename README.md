@@ -25,6 +25,7 @@ Download below database:
 1. **Update Configuration**:
    - Setup the correct folder path and API token in `.env.json` to include your downloaded geo data.
    - Setup the targeted zone and the method/level in `config.json`.
+   - Install Python lower or equal to version 3.12
 
 2. **Execute the Script**:
    - Run `01_main_generate_corres_points.py` to get the geographical points for fetching weather data from CorRES.
