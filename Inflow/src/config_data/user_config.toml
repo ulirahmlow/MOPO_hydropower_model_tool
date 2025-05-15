@@ -1,0 +1,87 @@
+#------------------------------------- Country Code Abbreviation ----------------------------------
+#--------------------------------------------------------------------------------------------------
+# "AT":    "Austria"          "ITCN":  "Italy (Central-North)"      "SI":    "Slovenia"           
+# "BE":    "Belgium"          "ITCS":  "Italy (Central-South)"      "SK":    "Slovakia"           
+# "BG":    "Bulgaria"         "ITSA":  "Italy (Sardinia)"           "SE1":   "Sweden (1)"         
+# "CH":    "Switzerland"      "ITN1":  "Italy (North)"              "SE2":   "Sweden (2)"         
+# "CZ":    "Czech Republic"   "ITSU":  "Italy (South)"              "SE3":   "Sweden (3)"         
+# "DE-LU": "Germany (LU)"     "ITSI":  "Italy (Sicily)"             "SE4":   "Sweden (4)"         
+# "ES":    "Spain"            "NO1":   "Norway (1)"                 "UK":    "United Kingdom" 
+# "FI":    "Finland"          "NO2":   "Norway (2)"           
+# "FR":    "France"           "NO3":   "Norway (3)"              
+# "HR":    "Croatia"          "NO4":   "Norway (4)"             
+# "GR":    "Greece"           "NO5":   "Norway (5)"           
+# "IE":    "Ireland"          "PT":    "Portugal"               
+# "LV":    "Latvia"           "PL":    "Poland"                  
+# "LT":    "Lithuania"        "RO":    "Romania"                  
+#--------------------------------------------------------------------------------------------------
+#
+#------------------------------Avaliable Country Code in HDAM Zone --------------------------------
+#--------------------------------------------------------------------------------------------------
+# "BG", "CH", "ES", "FR", "HR", "GR", "ITCN", "ITSA", "ITN1", "ITSU", "NO1", "NO2", "NO3", "NO4",
+# "NO5", "PT", "RO", "SE1", "SE2", "SE3", "SE4"
+#--------------------------------------------------------------------------------------------------
+#
+#------------------------------Avaliable Country Code in HROR Zone --------------------------------
+#--------------------------------------------------------------------------------------------------
+# "AT", "BE", "BG", "CH", "CZ", "DE-LU", "ES", "FI", "FR", "HR", "IE", "LV", "LT", "ITCN", "ITCS",
+# "ITSI", "ITSA", "ITN1", "NO1", "NO2", "NO3", "NO4", "NO5", "PT", "PL", "RO", "SI", "SK", "UK"
+#--------------------------------------------------------------------------------------------------
+#
+country_code  = "BG"
+#
+hydro_type = "hror"
+#
+upper_basin = true
+#
+algorithm  = false
+#
+level = "bidding zone"
+#
+predictors = ["smlt", "ssro", "sro", "tp"]
+#
+cds_source = "reanalysis-era5-single-levels"
+#choose to use ERA5_land:  "reanalysis-era5-land" or ERA5: "reanalysis-era5-single-levels"
+#
+predict_resolution = "weekly"
+#
+meteorological_source = "runoff"
+#
+run_of_river_generation = true
+#
+retro_predict = false
+#
+retro_climate_year = [2003, 2005]
+#
+equivalent_input = false
+#
+#--------------------------------------------------------------------------------------------------
+#------------------------------ Hydro and Geographic Data in Local Path ---------------------------
+#--------------------------------------------------------------------------------------------------
+data_dir=''
+solution_dir=''
+#
+eu_stream_dir = ''
+#
+entsoe_api_token=''
+#
+geo_dir=''
+weather_dir=''
+#TODO:remove corres
+#
+geo_grid_dir=''
+#TODO generate 0.5 or 0.1grid in geoprocess automatically
+
+#
+res_path=''
+lake_path=''
+#
+onshore_path=''
+#
+bas_lev7_path=''
+bas_lev6_path=''
+bas_lev5_path=''
+#
+cds_dir=''
+
+
