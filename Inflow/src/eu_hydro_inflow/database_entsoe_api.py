@@ -4,20 +4,13 @@ from entsoe import EntsoePandasClient
 from pandas import Timestamp,read_csv
 from pathlib import Path
 import pandas as pd
-import config
-import logging
 
 ###IMPROVEMENT: create the folder
 
 
+class EntsoeDataProcess:
 
-
-
-
-
-class entsoe_data_process:
-
-    def __init__(self, **kwargs):
+    def __init__(self, config_obj, **kwargs):
         self.api_key = kwargs['api_key']
         self.client = EntsoePandasClient(api_key=self.api_key)
         # entsoe API parameters
@@ -40,10 +33,9 @@ class entsoe_data_process:
                             'DE_TENNET', 'DE_TRANSNET', 'TR', 'UA', 'UA_DOBTPP', 'UA_BEI', 'UA_IPS', 
                             'XK', 'DE_AMP_LU']
         
-        self.__local_data_path = config.data_dir
+        self.__local_data_path = config_obj.config['data_dir']
 
         self.__time_zone = "UTC"
-        self.logger = logging.getLogger(__name__)
         #logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     # request_data 
@@ -67,38 +59,53 @@ class entsoe_data_process:
             return self.client.query_generation(area, start=start, end=end,psr_type=self.__prstype["hydro_river_and_poundage"])
         else:
             raise ValueError("Unsupported data request.")
-                 
+                
         
     # update local data
-    def entsoe_request(self, data_type: str, area: str, start_date: str, end_date: str,country_code:str)->pd.DataFrame:
+    # 
+    def entsoe_request(self, data_type: str, area: str, start_date: str, end_date: str, country_code: str) -> pd.DataFrame:
+        assert area in self.__area_code, "Unsupported area code"
 
-        assert area in self.__area_code, "unsupported area code"
-        start = Timestamp(start_date, tz=self.__time_zone)
-        end = Timestamp(end_date, tz=self.__time_zone)
+        start = pd.Timestamp(start_date, tz=self.__time_zone)
+        end = pd.Timestamp(end_date, tz=self.__time_zone)
 
+        data_config = {
+            "Reservoir rate": {
+                "file_suffix": "reservoir rate",
+                "query_func": lambda: self.client.query_aggregate_water_reservoirs_and_hydro_storage(area, start=start, end=end)
+            },
+            "Reservoir generation": {
+                "file_suffix": "reservoir generation",
+                "query_func": lambda: self.client.query_generation(area, start=start, end=end, psr_type=self.__prstype["hydro_water_reservoir"])
+            },
+            "Pumped Storage": {
+                "file_suffix": "pump_generation",
+                "query_func": lambda: self.client.query_generation(area, start=start, end=end, psr_type=self.__prstype["hydro_pumped_storage"])
+            },
+            "Run of river": {
+                "file_suffix": "ror_generation",
+                "query_func": lambda: self.client.query_generation(area, start=start, end=end, psr_type=self.__prstype["hydro_river_and_poundage"])
+            }
+        }
 
-        if data_type == "Reservoir rate":
-            # Pandas Series
-            requested_data = self.client.query_aggregate_water_reservoirs_and_hydro_storage(area, start=start, end=end)
-            data_path = Path(__file__).parent / self.__local_data_path / country_code/ f"{country_code}_{start_date}_20211231_reservoir rate.csv"
-        elif data_type == "Reservoir generation":
-            # Pandas Dataframe 1 row
-            requested_data = self.client.query_generation(area, start=start, end=end,psr_type=self.__prstype["hydro_water_reservoir"])
-            data_path = Path(__file__).parent / self.__local_data_path / country_code / f"{country_code}_{start_date}_20211231_reservoir generation.csv"
-        elif data_type == "Pumped Storage":
-            # Pandas Dataframe 1 row
-            requested_data = self.client.query_generation(area, start=start, end=end,psr_type=self.__prstype["hydro_pumped_storage"])
-            data_path = Path(__file__).parent / self.__local_data_path/ country_code  / f"{country_code}_{start_date}_20211231_pump_generation.csv"
-        elif data_type == "Run of river":
-            # Pandas Dataframe 1 row
-            requested_data = self.client.query_generation(area, start=start, end=end,psr_type=self.__prstype["hydro_river_and_poundage"])
-            data_path = Path(__file__).parent / self.__local_data_path/ country_code  / f"{country_code}_{start_date}_20211231_ror_generation.csv"
-        else:
+        if data_type not in data_config:
             raise ValueError("Unsupported data request.")
-        requested_data.to_csv(str(data_path))
-        
-        self.logger.info(f"Retrieve entsoe data: {country_code}_{data_type}--->Finished")
+
+        config = data_config[data_type]
+        file_name = f"{country_code}_{start_date}_{end_date}_{config['file_suffix']}.csv"
+        data_path = Path(__file__).parent / self.__local_data_path / country_code / file_name
+
+        if data_path.exists():
+            print(f"Retrieve entsoe data: {country_code}_{data_type} ---> Already exist locally")
+            requested_data = pd.read_csv(data_path, index_col=0)
+            requested_data.index = pd.to_datetime(requested_data.index, errors='coerce', utc=True)
+        else:
+            requested_data = config["query_func"]()
+            requested_data.to_csv(data_path)
+
+        print(f"Retrieve entsoe data: {country_code}_{data_type} ---> Finished")
         return pd.DataFrame(requested_data)
+
 
     # local_data_list 
     def local_data_list (self):
@@ -121,6 +128,6 @@ class entsoe_data_process:
         end = Timestamp(end_date, tz=self.__time_zone)   
         request_price=self.client.query_day_ahead_prices(area, start=start, end=end)
         
-        self.logger.info(f"Retrieve entsoe data: {country_code}_price--->Finished")
+        print(f"Retrieve entsoe data: {country_code}_price--->Finished")
         
         return pd.DataFrame(request_price)

@@ -10,20 +10,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from pandas import read_csv
-import logging
-import config
 
-class read_process_inflow:
-    def __init__(self):
-       self.__local_data_path =  config.data_dir
-       self.logger = logging.getLogger(__name__)
-       #logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s') 
+class ReadProcessInflow:
         
-    def read_local_data (self, file_path):
+    def read_local_data (file_path):
         return read_csv(file_path)
     
     
-    def index_date(self, input_data:pd.DataFrame, value_column:str)->pd.DataFrame:
+    def index_date(input_data:pd.DataFrame, value_column:str)->pd.DataFrame:
         
         """
         Preprocesses the given data into a datetime-indexed DataFrame
@@ -48,7 +42,7 @@ class read_process_inflow:
         #input_data.set_index(datetime_column, inplace=True)
         return pd.DataFrame(input_data)
         
-    def resample_data(self, input_data:pd.DataFrame, value_column:str, freq='W-SUN')->pd.DataFrame:
+    def resample_data(input_data:pd.DataFrame, value_column:str, freq='W-SUN')->pd.DataFrame:
         
         """
         Resamples the given data into a DataFrame with a given frequency.
@@ -69,17 +63,15 @@ class read_process_inflow:
             The resampled DataFrame with datetime index and value column.
         """
         input_data[value_column] = pd.to_numeric(input_data[value_column], errors='coerce')
-        input_data=input_data.resample(freq).sum()
+        input_data=input_data.resample(freq, label='right').sum()
         
         return pd.DataFrame(input_data)
     
-    def pre_process(self, sampledata,datatime_column, value_column):
+    def pre_process(sampledata,datatime_column, value_column):
         sampledata=sampledata.dropna(how='any')
         sampledata[value_column]=sampledata[value_column].astype(float)
         sampledata[datatime_column] = pd.to_datetime(sampledata[datatime_column],utc=True)
-                                                                
-        #sampledata[datatime_column] = sampledata[datatime_column].dt.normalize()  
-        #sampledata[datatime_column]=sampledata[datatime_column].dt.date                                           
+                                                                                                       
                                                                 
         sampledata.set_index(datatime_column, inplace=True)
         sampledata.index = pd.to_datetime(sampledata.index, utc=True)
@@ -88,7 +80,7 @@ class read_process_inflow:
         
 
 
-    def time_align(self, generation:pd.DataFrame, content:pd.DataFrame)->tuple:
+    def time_align(generation:pd.DataFrame, content:pd.DataFrame)->tuple:
        
         #find the start time of two dataframe
         """
@@ -125,7 +117,7 @@ class read_process_inflow:
     
     
     
-    def inflow_calculation(self, generation:pd.DataFrame, content:pd.DataFrame)->pd.DataFrame:
+    def inflow_calculation(generation:pd.DataFrame, content:pd.DataFrame)->pd.DataFrame:
         """
         Calculates the inflow data based on the given generation and content data.
 
@@ -144,32 +136,53 @@ class read_process_inflow:
 
         #content = content.apply(pd.to_numeric, errors='coerce')
         #generation = generation.apply(pd.to_numeric, errors='coerce')
-        inflow=pd.DataFrame(index=content.index[1:], columns=['Inflow weekly']) 
-        for t in range(1, len(generation)):
-            inflow.loc[content.index[t]]=content.iloc[t,0]-content.iloc[t-1,0]+generation.iloc[t,0] 
-        inflow['Inflow weekly']=pd.to_numeric(inflow['Inflow weekly'], errors='coerce')
+        # inflow=pd.DataFrame(index=content.index[1:], columns=['Inflow weekly']) 
+        # for t in range(1, len(generation)):
+        #     inflow.loc[content.index[t]]=content.iloc[t,0]-content.iloc[t-1,0]+generation.iloc[t,0] 
+        # inflow['Inflow weekly']=pd.to_numeric(inflow['Inflow weekly'], errors='coerce')
         
-        return pd.DataFrame(inflow)
+        threshold=3
+        #TODO:CH threshold=2
+        diff=content.diff().diff()
+        z_scores=(diff-diff.mean())/diff.std()
+        diff_mask=diff.copy()
+        diff_mask[z_scores.abs()>threshold]=np.nan
+
+        content_mask=content.copy()
+        content_mask[diff_mask.isna()]=np.nan
+        content_mask.interpolate(inplace=True)
+        
+        inf_orginal=pd.DataFrame(content_mask.diff().dropna(), index=content.index[1:]).values+pd.DataFrame(generation.iloc[:-1,0], index=content.index[1:]).values
+        inf_orginal=pd.DataFrame(inf_orginal, index=content.index[1:])
+        
+
+        spill=pd.DataFrame(0, index=inf_orginal.index, columns=inf_orginal.columns)
+        for i in range(1, len(inf_orginal)):
+            if inf_orginal.iloc[i,0]<0:
+                spill.iloc[i,0]=-inf_orginal.iloc[i,0]
+            else:
+                spill.iloc[i,0]=0
+
+        inf_update=inf_orginal+spill*1.2
+
+        return pd.DataFrame(inf_update)
     
-    def filldata(self, data, area, file_path):
+    def filldata(data, area, file_path):
         data=data.mask(data<0)
         pd.set_option('future.no_silent_downcasting', True)
-        # data_ffilled=data.fillna(method='ffill')
-        # data_bfilled=data.fillna(method='bfill')
         data_ffilled = data.ffill().infer_objects(copy=False)
         data_bfilled = data.bfill().infer_objects(copy=False)
         mean_filled_value=(data_bfilled+data_ffilled)/2
         data.fillna(mean_filled_value,inplace=True)
-        data.to_csv(str(file_path), sep=';')  #save by sep=; for Uli
+        data.to_csv(str(file_path), sep=';')  #save by sep=; for eq_model
                     
-        self.logger.info('Inflow calculation --> Finished')
         
         return data
     
             
     
             
-    def save_inflow_fig(self, data:pd.DataFrame, path:str, country_code:str)->None:
+    def save_inflow_fig(data:pd.DataFrame, path:str, country_code:str)->None:
 
         """
         Saves a plot of the inflow data for a given country.
@@ -195,7 +208,6 @@ class read_process_inflow:
         
         plt.savefig(path, bbox_inches='tight')
         plt.show()
-        self.logger.info(f'Save historical inflow fig for {country_code}--->Finished')
 
         return
 
